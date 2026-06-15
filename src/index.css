@@ -1,13 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-slate-300: #7E7E7E;
+  --color-slate-400: #7E7E7E;
+  --color-slate-500: #7E7E7E;
+  --color-slate-600: #282828;
+  --color-slate-700: #282828;
+  --color-slate-800: #282828;
+  --color-slate-900: #282828;
+  --color-blue-50: #e8f4f2;
+  --color-blue-100: #c6e3de;
+  --color-blue-200: #a4d2c9;
+  --color-blue-300: #81c0b3;
+  --color-blue-400: #5faf9d;
+  --color-blue-500: #3d9e88;
+  --color-blue-600: #194d43;
+  --color-blue-700: #143d35;
+  --color-blue-750: #143d35;
+  --color-blue-800: #0f2e28;
+  --color-blue-900: #0a1f1b;
 }
 
 body {
   background-color: #EBEBEB;
-  color: #1e293b;
+  color: #282828;
   font-family: var(--font-sans);
 }
