@@ -1,0 +1,8 @@
+{
+  "name": "Remix: VA Invests to",
+  "description": "Value Averaging (VA) investment companion with real-time stock rates and data preservation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
