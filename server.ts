@@ -17,6 +17,59 @@ async function startServer() {
     next();
   });
 
+  // Robust chart fetching with AbortController timeout and URL failover (query1 -> query2)
+  async function fetchChartWithFallback(symbol: string): Promise<{ price: number; prevClose: number }> {
+    const urls = [
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
+      `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+    ];
+
+    let lastError: any = null;
+
+    for (const url of urls) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout per attempt
+
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Yahoo Finance responded with status ${response.status}`);
+        }
+
+        const data: any = await response.json();
+        const result = data?.chart?.result?.[0];
+        if (!result) {
+          throw new Error("No chart result found");
+        }
+
+        const meta = result.meta;
+        const price = meta?.regularMarketPrice;
+        const prevClose = meta?.chartPreviousClose;
+
+        if (price === undefined || prevClose === undefined) {
+          throw new Error("Price metadata missing in Yahoo response");
+        }
+
+        return { price, prevClose };
+      } catch (err: any) {
+        console.warn(`Yahoo fetch attempt failed for icon/symbol (${symbol}) on (${url}):`, err.message || err);
+        lastError = err;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    throw lastError || new Error("Failed to fetch from all Yahoo Finance endpoints");
+  }
+
   // API Route: Get real-time stock quote from Yahoo Finance
   app.get("/api/quote", async (req, res) => {
     const symbol = req.query.symbol as string;
@@ -30,36 +83,7 @@ async function startServer() {
     }
 
     try {
-      // Fetch from Yahoo Finance
-      const response = await fetch(
-        `https://query1.finance.yahoo.com/v8/finance/chart/${cleanSymbol}?interval=1d&range=1d`,
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Yahoo Finance API responded with status ${response.status}`);
-      }
-
-      const data: any = await response.json();
-      const result = data?.chart?.result?.[0];
-      if (!result) {
-        throw new Error("No chart result found in Yahoo Finance response");
-      }
-
-      const meta = result.meta;
-      const price = meta?.regularMarketPrice;
-      const prevClose = meta?.chartPreviousClose;
-
-      if (price === undefined || prevClose === undefined) {
-        throw new Error("Price data is missing from Yahoo response");
-      }
-
+      const { price, prevClose } = await fetchChartWithFallback(cleanSymbol);
       const change = price - prevClose;
       const changePercent = (change / prevClose) * 100;
 
@@ -73,7 +97,7 @@ async function startServer() {
         isFallback: false,
       });
     } catch (error: any) {
-      console.error(`Error fetching quote for ${cleanSymbol}:`, error.message);
+      console.error(`Error fetching quote for ${cleanSymbol}, triggering safety fallback:`, error.message || error);
       
       // Fallback prices in case Yahoo is blocked or rate-limited
       let basePrice = 224.5;
@@ -103,36 +127,7 @@ async function startServer() {
   // API Route: Get real-time VIX Volatility Index (Fear Index) from Yahoo Finance
   app.get("/api/vix", async (req, res) => {
     try {
-      // Fetch VIX from Yahoo Finance
-      const response = await fetch(
-        "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d",
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Yahoo Finance API for VIX responded with status ${response.status}`);
-      }
-
-      const data: any = await response.json();
-      const result = data?.chart?.result?.[0];
-      if (!result) {
-        throw new Error("No chart result found in VIX response");
-      }
-
-      const meta = result.meta;
-      const price = meta?.regularMarketPrice;
-      const prevClose = meta?.chartPreviousClose;
-
-      if (price === undefined || prevClose === undefined) {
-        throw new Error("Price data is missing from VIX response");
-      }
-
+      const { price, prevClose } = await fetchChartWithFallback("%5EVIX");
       const change = price - prevClose;
       const changePercent = (change / prevClose) * 100;
 
@@ -145,7 +140,7 @@ async function startServer() {
         isFallback: false,
       });
     } catch (error: any) {
-      console.error("Error fetching VIX:", error.message);
+      console.error("Error fetching VIX, triggering safety fallback:", error.message || error);
       
       // Dynamic VIX fallback in safe ranges
       const basePrice = 14.85 + (Math.random() - 0.5) * 0.4;

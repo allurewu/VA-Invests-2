@@ -197,24 +197,86 @@ export default function App() {
     setLoadingQuotes(true);
     try {
       const [resQQQM, resVOO, resVix] = await Promise.all([
-        fetch("/api/quote?symbol=QQQM"),
-        fetch("/api/quote?symbol=VOO"),
-        fetch("/api/vix")
+        fetch("/api/quote?symbol=QQQM").catch(() => null),
+        fetch("/api/quote?symbol=VOO").catch(() => null),
+        fetch("/api/vix").catch(() => null)
       ]);
 
-      const dataQQQM = resQQQM.ok ? await resQQQM.json() : null;
-      const dataVOO = resVOO.ok ? await resVOO.json() : null;
-      const dataVix = resVix.ok ? await resVix.json() : null;
+      const dataQQQM = (resQQQM && resQQQM.ok) ? await resQQQM.json().catch(() => null) : null;
+      const dataVOO = (resVOO && resVOO.ok) ? await resVOO.json().catch(() => null) : null;
+      const dataVix = (resVix && resVix.ok) ? await resVix.json().catch(() => null) : null;
+
+      const fallbackQQQM: StockQuote = {
+        symbol: "QQQM",
+        price: 224.50,
+        prevClose: 224.00,
+        change: 0.5,
+        changePercent: 0.22,
+        timestamp: Date.now(),
+        isFallback: true
+      };
+
+      const fallbackVOO: StockQuote = {
+        symbol: "VOO",
+        price: 542.80,
+        prevClose: 544.10,
+        change: -1.3,
+        changePercent: -0.24,
+        timestamp: Date.now(),
+        isFallback: true
+      };
+
+      const fallbackVix: VixQuote = {
+        price: 15.42,
+        prevClose: 15.60,
+        change: -0.18,
+        changePercent: -1.15,
+        timestamp: Date.now(),
+        isFallback: true
+      };
 
       setQuotes({
-        QQQM: dataQQQM,
-        VOO: dataVOO
+        QQQM: dataQQQM || fallbackQQQM,
+        VOO: dataVOO || fallbackVOO
       });
-      if (dataVix) {
-        setVix(dataVix);
-      }
+      setVix(dataVix || fallbackVix);
     } catch (err) {
       console.error("Error fetching live rates from Express Quote API", err);
+      
+      const fallbackQQQM: StockQuote = {
+        symbol: "QQQM",
+        price: 224.50,
+        prevClose: 224.00,
+        change: 0.5,
+        changePercent: 0.22,
+        timestamp: Date.now(),
+        isFallback: true
+      };
+
+      const fallbackVOO: StockQuote = {
+        symbol: "VOO",
+        price: 542.80,
+        prevClose: 544.10,
+        change: -1.3,
+        changePercent: -0.24,
+        timestamp: Date.now(),
+        isFallback: true
+      };
+
+      const fallbackVix: VixQuote = {
+        price: 15.42,
+        prevClose: 15.60,
+        change: -0.18,
+        changePercent: -1.15,
+        timestamp: Date.now(),
+        isFallback: true
+      };
+
+      setQuotes(prev => ({
+        QQQM: prev.QQQM || fallbackQQQM,
+        VOO: prev.VOO || fallbackVOO
+      }));
+      setVix(prev => prev || fallbackVix);
     } finally {
       setLoadingQuotes(false);
     }
