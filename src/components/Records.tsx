@@ -229,8 +229,8 @@ export default function Records({
     <div className="space-y-5 pb-24">
       {/* Page Title */}
       <div>
-        <h1 className="text-xl font-bold text-slate-800 tracking-tight">定投记账理财 (Transactions)</h1>
-        <p className="text-xs text-slate-400 mt-1 font-medium">登记或拆分历史买入明细，自平衡仓位成本核算</p>
+        <h1 className="text-xl font-bold text-slate-800 tracking-tight">定投记账</h1>
+        <p className="text-xs text-slate-400 mt-2 font-medium">登记或拆分历史买入明细，自平衡仓位成本核算</p>
       </div>
 
       {/* VA Suggestions banner - Clean banner */}

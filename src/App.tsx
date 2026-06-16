@@ -345,7 +345,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#EBEBEB] text-slate-800 flex flex-col font-sans select-none antialiased">
       {/* Main viewport Container */}
-      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-6 z-10 overflow-x-hidden">
+      <main className="flex-1 w-full max-w-md mx-auto px-4 pt-[calc(1.5rem+env(safe-area-inset-top,0px))] z-10 overflow-x-hidden">
         {activeTab === "dashboard" && (
           <Dashboard
             records={records}

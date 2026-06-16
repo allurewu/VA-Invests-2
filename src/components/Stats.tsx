@@ -143,9 +143,9 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
     <div className="space-y-5 pb-24">
       {/* Title */}
       <div>
-        <h1 className="text-xl font-bold text-slate-800 tracking-tight">VA 投资分析报告 (Analytics Report)</h1>
-        <p className="text-xs text-slate-400 mt-1 font-medium">
-          三线重合、盈亏深度归因、自平衡资产配比，一眼洞见财富增长轨迹
+        <h1 className="text-xl font-bold text-slate-800 tracking-tight">分析报告</h1>
+        <p className="text-xs text-slate-400 mt-2 font-medium">
+          平衡资产配比，一眼洞见财富增长轨迹
         </p>
       </div>
 
@@ -154,9 +154,9 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
-            <h4 className="font-bold text-amber-800 uppercase tracking-wider">尚未配置 VA 增长计划</h4>
+            <h4 className="font-bold text-amber-800 uppercase tracking-wider">尚未配置定投计划</h4>
             <p className="text-slate-600 leading-relaxed font-medium">
-              请先到「计划页」设定月度目标计划。设定后，此分析页面将全自动激活并渲染 <b>「目标价值、累计投入、实际清算资产」三线对比动态图</b> 以及 <b>「月定投统计指标」</b>。
+              定投计划设定后，此分折页面将全自动激活并渲染数据动态图。
             </p>
           </div>
         </div>

@@ -144,9 +144,9 @@ export default function Plan({
     <div className="space-y-5 pb-24">
       {/* Title */}
       <div>
-        <h1 className="text-xl font-bold text-slate-800 tracking-tight">VA 价值平均计划 (Plan Rules)</h1>
-        <p className="text-xs text-slate-400 mt-1 font-medium font-sans">
-          Value Averaging 核心在于：让您的资产总额每月按固定金额平稳增长。市场跌时加仓，涨时自平衡减仓，获取极具优势的持股仓位。
+        <h1 className="text-xl font-bold text-slate-800 tracking-tight">价值计划</h1>
+        <p className="text-xs text-slate-400 mt-2 font-medium font-sans">
+          让您的资产总额每月按固定金额平稳增长
         </p>
       </div>
 

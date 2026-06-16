@@ -95,29 +95,38 @@ export default function Dashboard({
 
   return (
     <div className="space-y-5 pb-24">
-      {/* 5.4 Simple Header (Clean, minimalist brand display) */}
-      <div className="flex justify-between items-center bg-[#F3F3F3] border border-[#FFFFFF] p-4 rounded-2xl">
-        <div>
-          <div className="text-xl font-extrabold text-blue-600 tracking-tight leading-none">
-            VA INVEST
+      {/* 5.4 Premium Financial Header */}
+      <div className="flex justify-between items-center py-2.5 px-0 relative overflow-hidden select-none">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm tracking-tighter shrink-0">
+            VA
           </div>
-          <p className="text-[10px] text-slate-400 mt-1.5 font-medium tracking-wide">VALUE AVERAGING SYSTEM</p>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-black text-slate-800 tracking-tight leading-none">VA INVEST</span>
+              <span className="inline-flex items-center gap-1 text-[8px] bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded-full font-bold">
+                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                LIVE
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium tracking-normal mt-1 leading-none">价值平均算法定投系统</p>
+          </div>
         </div>
         <div className="flex items-center">
           {loadingQuotes ? (
-            <span className="text-slate-400 text-[10px] font-medium flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 animate-pulse">
+            <span className="text-slate-400 text-[10px] font-bold flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 animate-pulse">
               <RefreshCw className="w-3 h-3 animate-spin text-blue-600" />
-              同步中...
+              同步报价
             </span>
           ) : (
             <button
               onClick={onRefreshQuotes}
               disabled={loadingQuotes}
               id="refresh_rates_btn"
-              className="px-3 py-1.5 bg-slate-50 text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-500/35 transition rounded-full text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+              className="px-3.5 py-1.5 bg-white text-slate-700 hover:text-blue-600 hover:bg-blue-50 border border-slate-200 hover:border-blue-500/30 transition-all rounded-full text-[10px] font-bold flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
-              <RefreshCw className="w-3 h-3" />
-              <span>行情刷新</span>
+              <RefreshCw className="w-3 h-3 text-blue-500" />
+              <span>智能刷新</span>
             </button>
           )}
         </div>
