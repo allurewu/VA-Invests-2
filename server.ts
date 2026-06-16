@@ -17,24 +17,71 @@ async function startServer() {
     next();
   });
 
+  // Robust CNBC fallback for live stock quotes
+  async function fetchCNBCFallback(symbol: string): Promise<{ price: number; prevClose: number }> {
+    let cnbcSymbol = symbol;
+    if (symbol === "%5EVIX" || symbol === "^VIX") {
+      cnbcSymbol = ".VIX";
+    }
+
+    const url = `https://quote.cnbc.com/quote-html-webservice/quote.htm?symbols=${cnbcSymbol}&output=json`;
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`CNBC responded with status ${response.status}`);
+    }
+
+    const data: any = await response.json();
+    const quote = data?.QuickQuoteResult?.QuickQuote;
+    
+    const item = Array.isArray(quote) 
+      ? quote.find((q: any) => q.symbol === cnbcSymbol)
+      : (quote?.symbol === cnbcSymbol ? quote : null);
+
+    if (!item) {
+      throw new Error(`No quote found in CNBC response for ${cnbcSymbol}`);
+    }
+
+    const price = parseFloat(item.last);
+    const change = parseFloat(item.change || "0");
+    
+    let prevClose = parseFloat(item.previous_day_closing);
+    if (isNaN(prevClose)) {
+      prevClose = price - change;
+    }
+
+    if (isNaN(price) || isNaN(prevClose)) {
+      throw new Error("Invalid pricing information in CNBC response");
+    }
+
+    return { price, prevClose };
+  }
+
   // Robust chart fetching with AbortController timeout and URL failover running in parallel
   async function fetchChartWithFallback(symbol: string): Promise<{ price: number; prevClose: number }> {
     const urls = [
-      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
-      `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1d`,
+      `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1d`
     ];
 
     const fetchWithTimeout = async (url: string): Promise<{ price: number; prevClose: number }> => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1200); // Super fast 1.2-second timeout per attempt
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // Robust 6-second timeout per attempt
 
       try {
         const response = await fetch(url, {
           signal: controller.signal,
           headers: {
             "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json",
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Origin": "https://finance.yahoo.com",
+            "Referer": "https://finance.yahoo.com/"
           },
         });
 
@@ -69,10 +116,43 @@ async function startServer() {
       // Race both query1 and query2 concurrently - whichever returns first wins!
       return await Promise.any(urls.map(url => fetchWithTimeout(url)));
     } catch (err: any) {
-      console.warn(`Parallel Yahoo fetch failed for ${symbol}:`, err.message || err);
-      throw new Error(`Failed to fetch ${symbol} from all Yahoo endpoints`);
+      console.warn(`Parallel Yahoo fetch failed for ${symbol}:`, err.message || err, "Attempting CNBC live fallback...");
+      try {
+        return await fetchCNBCFallback(symbol);
+      } catch (fallbackErr: any) {
+        console.error(`CNBC fallback also failed for ${symbol}:`, fallbackErr.message || fallbackErr);
+        throw new Error(`Failed to fetch ${symbol} from all endpoints (Yahoo 429 and CNBC failed)`);
+      }
     }
   }
+
+  // API Route: Get real-time stock quote from Yahoo Finance
+  app.get("/api/debug-fetch", async (req, res) => {
+    const symbol = (req.query.symbol as string || "VOO").toUpperCase().trim();
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=1d&interval=1d`;
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/plain, */*",
+        }
+      });
+      const text = await response.text();
+      return res.json({
+        status: response.status,
+        statusText: response.statusText,
+        url,
+        headers: Object.fromEntries(response.headers.entries()),
+        bodySnippet: text.substring(0, 1000)
+      });
+    } catch (err: any) {
+      return res.json({
+        error: err.message || err,
+        stack: err.stack,
+        url
+      });
+    }
+  });
 
   // API Route: Get real-time stock quote from Yahoo Finance
   app.get("/api/quote", async (req, res) => {

@@ -220,7 +220,7 @@ export default function App() {
       return;
     }
 
-    const fetchWithTimeout = async (url: string, timeoutMs: number = 1500) => {
+    const fetchWithTimeout = async (url: string, timeoutMs: number = 8000) => {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -236,9 +236,9 @@ export default function App() {
     setLoadingQuotes(true);
     try {
       const [resQQQM, resVOO, resVix] = await Promise.all([
-        fetchWithTimeout("/api/quote?symbol=QQQM", 1500),
-        fetchWithTimeout("/api/quote?symbol=VOO", 1500),
-        fetchWithTimeout("/api/vix", 1500)
+        fetchWithTimeout("/api/quote?symbol=QQQM", 8000),
+        fetchWithTimeout("/api/quote?symbol=VOO", 8000),
+        fetchWithTimeout("/api/vix", 8000)
       ]);
 
       const dataQQQM = (resQQQM && resQQQM.ok) ? await resQQQM.json().catch(() => null) : null;
