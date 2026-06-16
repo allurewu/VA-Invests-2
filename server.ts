@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import fetch from "node-fetch";
 
 async function startServer() {
   const app = express();
@@ -48,11 +49,7 @@ async function startServer() {
 
     const price = parseFloat(item.last);
     const change = parseFloat(item.change || "0");
-    
-    let prevClose = parseFloat(item.previous_day_closing);
-    if (isNaN(prevClose)) {
-      prevClose = price - change;
-    }
+    const prevClose = price - change;
 
     if (isNaN(price) || isNaN(prevClose)) {
       throw new Error("Invalid pricing information in CNBC response");
