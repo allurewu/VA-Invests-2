@@ -17,18 +17,16 @@ async function startServer() {
     next();
   });
 
-  // Robust chart fetching with AbortController timeout and URL failover (query1 -> query2)
+  // Robust chart fetching with AbortController timeout and URL failover running in parallel
   async function fetchChartWithFallback(symbol: string): Promise<{ price: number; prevClose: number }> {
     const urls = [
       `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
       `https://query2.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
     ];
 
-    let lastError: any = null;
-
-    for (const url of urls) {
+    const fetchWithTimeout = async (url: string): Promise<{ price: number; prevClose: number }> => {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3-second timeout per attempt
+      const timeoutId = setTimeout(() => controller.abort(), 1200); // Super fast 1.2-second timeout per attempt
 
       try {
         const response = await fetch(url, {
@@ -39,6 +37,8 @@ async function startServer() {
             "Accept": "application/json",
           },
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`Yahoo Finance responded with status ${response.status}`);
@@ -60,14 +60,18 @@ async function startServer() {
 
         return { price, prevClose };
       } catch (err: any) {
-        console.warn(`Yahoo fetch attempt failed for icon/symbol (${symbol}) on (${url}):`, err.message || err);
-        lastError = err;
-      } finally {
         clearTimeout(timeoutId);
+        throw err;
       }
-    }
+    };
 
-    throw lastError || new Error("Failed to fetch from all Yahoo Finance endpoints");
+    try {
+      // Race both query1 and query2 concurrently - whichever returns first wins!
+      return await Promise.any(urls.map(url => fetchWithTimeout(url)));
+    } catch (err: any) {
+      console.warn(`Parallel Yahoo fetch failed for ${symbol}:`, err.message || err);
+      throw new Error(`Failed to fetch ${symbol} from all Yahoo endpoints`);
+    }
   }
 
   // API Route: Get real-time stock quote from Yahoo Finance

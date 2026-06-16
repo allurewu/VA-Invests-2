@@ -137,8 +137,34 @@ export default function App() {
   const [records, setRecords] = useState<InvestmentRecord[]>([]);
   const [plan, setPlan] = useState<ValueAveragePlan | null>(null);
   const [settings, setSettings] = useState<AppSettings>({ qqqmRatio: 70, vooRatio: 30, provider: "Yahoo Finance" });
-  const [quotes, setQuotes] = useState<Record<"QQQM" | "VOO", StockQuote | null>>({ QQQM: null, VOO: null });
-  const [vix, setVix] = useState<VixQuote | null>(null);
+  const [quotes, setQuotes] = useState<Record<"QQQM" | "VOO", StockQuote | null>>({
+    QQQM: {
+      symbol: "QQQM",
+      price: 224.50,
+      prevClose: 224.00,
+      change: 0.5,
+      changePercent: 0.22,
+      timestamp: Date.now(),
+      isFallback: true
+    },
+    VOO: {
+      symbol: "VOO",
+      price: 542.80,
+      prevClose: 544.10,
+      change: -1.3,
+      changePercent: -0.24,
+      timestamp: Date.now(),
+      isFallback: true
+    }
+  });
+  const [vix, setVix] = useState<VixQuote | null>({
+    price: 15.42,
+    prevClose: 15.60,
+    change: -0.18,
+    changePercent: -1.15,
+    timestamp: Date.now(),
+    isFallback: true
+  });
   const [loadingQuotes, setLoadingQuotes] = useState<boolean>(false);
   
   // Transition / Prefills state from dashboard click to record screen
@@ -194,12 +220,25 @@ export default function App() {
       return;
     }
 
+    const fetchWithTimeout = async (url: string, timeoutMs: number = 1500) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (e) {
+        clearTimeout(id);
+        return null;
+      }
+    };
+
     setLoadingQuotes(true);
     try {
       const [resQQQM, resVOO, resVix] = await Promise.all([
-        fetch("/api/quote?symbol=QQQM").catch(() => null),
-        fetch("/api/quote?symbol=VOO").catch(() => null),
-        fetch("/api/vix").catch(() => null)
+        fetchWithTimeout("/api/quote?symbol=QQQM", 1500),
+        fetchWithTimeout("/api/quote?symbol=VOO", 1500),
+        fetchWithTimeout("/api/vix", 1500)
       ]);
 
       const dataQQQM = (resQQQM && resQQQM.ok) ? await resQQQM.json().catch(() => null) : null;
