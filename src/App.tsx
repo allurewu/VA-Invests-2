@@ -17,12 +17,14 @@ import {
   savePlan, 
   saveSettings 
 } from "./lib/db";
-import { InvestmentRecord, ValueAveragePlan, AppSettings, StockQuote, VixQuote } from "./types";
+import { InvestmentRecord, ValueAveragePlan, AppSettings, StockQuote } from "./types";
 import Dashboard from "./components/Dashboard";
 import Records from "./components/Records";
 import Plan from "./components/Plan";
 import Stats from "./components/Stats";
 import Settings from "./components/Settings";
+import { supabase } from "./lib/supabase";
+
 
 // Custom Navigation Icons (SVG implementations matching Iconly Light)
 const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -137,35 +139,10 @@ export default function App() {
   const [records, setRecords] = useState<InvestmentRecord[]>([]);
   const [plan, setPlan] = useState<ValueAveragePlan | null>(null);
   const [settings, setSettings] = useState<AppSettings>({ qqqmRatio: 70, vooRatio: 30, provider: "Yahoo Finance" });
-  const [quotes, setQuotes] = useState<Record<"QQQM" | "VOO", StockQuote | null>>({
-    QQQM: {
-      symbol: "QQQM",
-      price: 224.50,
-      prevClose: 224.00,
-      change: 0.5,
-      changePercent: 0.22,
-      timestamp: Date.now(),
-      isFallback: true
-    },
-    VOO: {
-      symbol: "VOO",
-      price: 542.80,
-      prevClose: 544.10,
-      change: -1.3,
-      changePercent: -0.24,
-      timestamp: Date.now(),
-      isFallback: true
-    }
-  });
-  const [vix, setVix] = useState<VixQuote | null>({
-    price: 15.42,
-    prevClose: 15.60,
-    change: -0.18,
-    changePercent: -1.15,
-    timestamp: Date.now(),
-    isFallback: true
-  });
+  const [quotes, setQuotes] = useState<Record<"QQQM" | "VOO", StockQuote | null>>({ QQQM: null, VOO: null });
   const [loadingQuotes, setLoadingQuotes] = useState<boolean>(false);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [supabaseEmpty, setSupabaseEmpty] = useState<boolean>(false);
   
   // Transition / Prefills state from dashboard click to record screen
   const [prefills, setPrefills] = useState<{ qqqmAmount: number; vooAmount: number } | null>(null);
@@ -185,137 +162,70 @@ export default function App() {
     }
   };
 
-  // Fetch Quotes helper (calls Express API router proxy)
+  // Fetch Quotes helper (calls Supabase stock_prices table directly)
   const fetchQuotes = async () => {
-    if (settings.provider === "Fallback Static Mode") {
-      // Simulate prices when requested offline or in static model
-      setQuotes({
-        QQQM: {
-          symbol: "QQQM",
-          price: 224.50,
-          prevClose: 224.00,
-          change: 0.5,
-          changePercent: 0.22,
-          timestamp: Date.now(),
-          isFallback: true
-        },
-        VOO: {
-          symbol: "VOO",
-          price: 542.80,
-          prevClose: 544.10,
-          change: -1.3,
-          changePercent: -0.24,
-          timestamp: Date.now(),
-          isFallback: true
-        }
-      });
-      setVix({
-        price: 15.42,
-        prevClose: 15.60,
-        change: -0.18,
-        changePercent: -1.15,
-        timestamp: Date.now(),
-        isFallback: true
-      });
-      return;
-    }
-
-    const fetchWithTimeout = async (url: string, timeoutMs: number = 8000) => {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(id);
-        return response;
-      } catch (e) {
-        clearTimeout(id);
-        return null;
-      }
-    };
-
     setLoadingQuotes(true);
+    setSupabaseError(null);
+    setSupabaseEmpty(false);
     try {
-      const [resQQQM, resVOO, resVix] = await Promise.all([
-        fetchWithTimeout("/api/quote?symbol=QQQM", 8000),
-        fetchWithTimeout("/api/quote?symbol=VOO", 8000),
-        fetchWithTimeout("/api/vix", 8000)
-      ]);
+      const { data, error } = await supabase
+        .from("stock_prices")
+        .select("*");
 
-      const dataQQQM = (resQQQM && resQQQM.ok) ? await resQQQM.json().catch(() => null) : null;
-      const dataVOO = (resVOO && resVOO.ok) ? await resVOO.json().catch(() => null) : null;
-      const dataVix = (resVix && resVix.ok) ? await resVix.json().catch(() => null) : null;
+      console.dir({ msg: "Supabase raw fetch result", data, error });
 
-      const fallbackQQQM: StockQuote = {
+      if (error) {
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("Supabase returned empty data []. This is highly likely due to Row Level Security (RLS) being enabled without active SELECT policies, or the table has no rows.");
+        setSupabaseEmpty(true);
+        setQuotes({
+          QQQM: null,
+          VOO: null
+        });
+        return;
+      }
+
+      const qqqmRow = data.find((r: any) => r.symbol?.toUpperCase() === "QQQM");
+      const vooRow = data.find((r: any) => r.symbol?.toUpperCase() === "VOO");
+
+      const qQuote: StockQuote | null = qqqmRow ? {
         symbol: "QQQM",
-        price: 224.50,
-        prevClose: 224.00,
-        change: 0.5,
-        changePercent: 0.22,
-        timestamp: Date.now(),
-        isFallback: true
-      };
+        price: parseFloat(qqqmRow.price),
+        prevClose: parseFloat(qqqmRow.price),
+        change: 0,
+        changePercent: 0,
+        timestamp: qqqmRow.updated_at ? new Date(qqqmRow.updated_at).getTime() : Date.now(),
+        isFallback: false
+      } : null;
 
-      const fallbackVOO: StockQuote = {
+      const vQuote: StockQuote | null = vooRow ? {
         symbol: "VOO",
-        price: 542.80,
-        prevClose: 544.10,
-        change: -1.3,
-        changePercent: -0.24,
-        timestamp: Date.now(),
-        isFallback: true
-      };
-
-      const fallbackVix: VixQuote = {
-        price: 15.42,
-        prevClose: 15.60,
-        change: -0.18,
-        changePercent: -1.15,
-        timestamp: Date.now(),
-        isFallback: true
-      };
+        price: parseFloat(vooRow.price),
+        prevClose: parseFloat(vooRow.price),
+        change: 0,
+        changePercent: 0,
+        timestamp: vooRow.updated_at ? new Date(vooRow.updated_at).getTime() : Date.now(),
+        isFallback: false
+      } : null;
 
       setQuotes({
-        QQQM: dataQQQM || fallbackQQQM,
-        VOO: dataVOO || fallbackVOO
+        QQQM: qQuote,
+        VOO: vQuote
       });
-      setVix(dataVix || fallbackVix);
-    } catch (err) {
-      console.error("Error fetching live rates from Express Quote API", err);
-      
-      const fallbackQQQM: StockQuote = {
-        symbol: "QQQM",
-        price: 224.50,
-        prevClose: 224.00,
-        change: 0.5,
-        changePercent: 0.22,
-        timestamp: Date.now(),
-        isFallback: true
-      };
 
-      const fallbackVOO: StockQuote = {
-        symbol: "VOO",
-        price: 542.80,
-        prevClose: 544.10,
-        change: -1.3,
-        changePercent: -0.24,
-        timestamp: Date.now(),
-        isFallback: true
-      };
-
-      const fallbackVix: VixQuote = {
-        price: 15.42,
-        prevClose: 15.60,
-        change: -0.18,
-        changePercent: -1.15,
-        timestamp: Date.now(),
-        isFallback: true
-      };
-
-      setQuotes(prev => ({
-        QQQM: prev.QQQM || fallbackQQQM,
-        VOO: prev.VOO || fallbackVOO
-      }));
-      setVix(prev => prev || fallbackVix);
+      if (!qQuote && !vQuote) {
+        setSupabaseEmpty(true);
+      }
+    } catch (err: any) {
+      console.error("Error fetching quotes from Supabase stock_prices:", err);
+      setSupabaseError("数据加载失败");
+      setQuotes({
+        QQQM: null,
+        VOO: null
+      });
     } finally {
       setLoadingQuotes(false);
     }
@@ -325,13 +235,10 @@ export default function App() {
     loadData();
   }, []);
 
-  // Fetch live prices whenever provider settings or initial load happens
+  // Fetch live prices once when settings load or initially
   useEffect(() => {
     fetchQuotes();
-    // Auto refresh every 5 mins
-    const interval = setInterval(fetchQuotes, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [settings.provider]);
+  }, []);
 
   // Operations: Records
   const handleAddRecord = async (newRecord: InvestmentRecord) => {
@@ -467,11 +374,12 @@ export default function App() {
             plan={plan}
             settings={settings}
             quotes={quotes}
-            vix={vix}
             loadingQuotes={loadingQuotes}
             onRefreshQuotes={fetchQuotes}
             onQuickRecord={handleQuickRecord}
             onNavigateToPlan={() => setActiveTab("plan")}
+            supabaseError={supabaseError}
+            supabaseEmpty={supabaseEmpty}
           />
         )}
 

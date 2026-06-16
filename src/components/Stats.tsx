@@ -282,7 +282,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
           <span className="text-base font-bold text-slate-800 font-mono block">
             {plan ? formatCurrency(maxSingleMonthInvest) : formatCurrency(0)}
           </span>
-          <span className="text-[9px] text-slate-400 font-medium block">单月合并加仓买入金额的波峰</span>
+          <span className="text-[10px] text-slate-400 font-medium block">单月合并加仓买入金额的波峰</span>
         </div>
 
         {/* Best Performance Month */}
@@ -291,7 +291,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
           <span className="text-xs font-bold text-slate-700 block truncate leading-5">
             {plan ? maxReturnMonth : "暂无"}
           </span>
-          <span className="text-[9px] text-slate-400 font-medium block">持股市值跑赢成本最大月</span>
+          <span className="text-[10px] text-slate-400 font-medium block">持股市值跑赢成本最大月</span>
         </div>
       </div>
 

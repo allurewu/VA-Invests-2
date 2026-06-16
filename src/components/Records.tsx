@@ -392,7 +392,7 @@ export default function Records({
                 <button
                   type="button"
                   onClick={applyLivePrice}
-                  className="text-[9px] text-blue-600 font-bold uppercase hover:underline cursor-pointer"
+                  className="text-[10px] text-blue-600 font-bold uppercase hover:underline cursor-pointer"
                 >
                   录入实时价
                 </button>
@@ -424,7 +424,7 @@ export default function Records({
                   onChange={(e) => setIsManualShares(e.target.checked)}
                   className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <label htmlFor="manual_share_toggle" className="text-[9px] text-slate-400 font-bold cursor-pointer selection:bg-transparent">
+                <label htmlFor="manual_share_toggle" className="text-[10px] text-slate-400 font-bold cursor-pointer selection:bg-transparent">
                   手动微调股数
                 </label>
               </div>
@@ -555,7 +555,7 @@ export default function Records({
                     {/* Live unrealized return estimate for this single lot */}
                     {livePrice && (
                       <div className="text-right">
-                        <span className="text-[9px] text-slate-400 font-bold block">此单即时估盈</span>
+                        <span className="text-[10px] text-slate-400 font-bold block">此单即时估盈</span>
                         <span className={`text-[10px] font-mono font-bold ${assetReturn >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                           {assetReturn >= 0 ? "+" : ""}{assetReturn.toFixed(2)} ({returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%)
                         </span>

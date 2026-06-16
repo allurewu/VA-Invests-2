@@ -11,7 +11,7 @@ import {
   AlertCircle,
   HelpCircle
 } from "lucide-react";
-import { InvestmentRecord, ValueAveragePlan, AppSettings, StockQuote, VixQuote } from "../types";
+import { InvestmentRecord, ValueAveragePlan, AppSettings, StockQuote } from "../types";
 import { formatCurrency, formatPercent, getElapsedMonths, getTargetValueForMonth } from "../utils";
 
 interface DashboardProps {
@@ -19,69 +19,25 @@ interface DashboardProps {
   plan: ValueAveragePlan | null;
   settings: AppSettings;
   quotes: Record<"QQQM" | "VOO", StockQuote | null>;
-  vix: VixQuote | null;
   loadingQuotes: boolean;
   onRefreshQuotes: () => void;
   onQuickRecord: (prefills: { qqqmAmount: number; vooAmount: number }) => void;
   onNavigateToPlan: () => void;
+  supabaseError?: string | null;
+  supabaseEmpty?: boolean;
 }
-
-const getVixInterpretation = (val: number) => {
-  if (val < 10) {
-    return {
-      text: "极度乐观 / 变盘警惕",
-      color: "text-emerald-600 bg-emerald-50",
-      barColor: "bg-[#0f766e]",
-      desc: "市场极其安定，注意波动率可能触底反弹带来的突发调整风险。"
-    };
-  } else if (val >= 10 && val < 15) {
-    return {
-      text: "乐观平静",
-      color: "text-emerald-500 bg-emerald-50",
-      barColor: "bg-[#115e59]",
-      desc: "市场波动率较低，投资者持信心乐观。情绪稳健，是适合执行常规计划的良机。"
-    };
-  } else if (val >= 15 && val < 20) {
-    return {
-      text: "正常区间",
-      color: "text-slate-650 bg-slate-100",
-      barColor: "bg-[#194D43]",
-      desc: "波动处于中枢常态，无极端情绪扰动。定投可安心推进，按权重布局。"
-    };
-  } else if (val >= 20 && val < 30) {
-    return {
-      text: "市场紧张",
-      color: "text-amber-600 bg-amber-50",
-      barColor: "bg-[#b45309]",
-      desc: "多空分歧加剧，市场暗流涌动。可按VA定投建议适度加力买入筹码。"
-    };
-  } else if (val >= 30 && val < 40) {
-    return {
-      text: "明显恐慌",
-      color: "text-orange-650 bg-orange-50",
-      barColor: "bg-[#c2410c]",
-      desc: "避险盘集中涌出，资产价格超跌。在VA价值平均指引下，此时定投买入溢价很高！"
-    };
-  } else {
-    return {
-      text: "极度恐慌",
-      color: "text-rose-600 bg-rose-50 border border-rose-100",
-      barColor: "bg-[#be123c]",
-      desc: "黑天鹅极端风险事件肆虐。巴菲特式的黄金吸筹点，VA策略将建议加大定投倍率买入。"
-    };
-  }
-};
 
 export default function Dashboard({
   records,
   plan,
   settings,
   quotes,
-  vix,
   loadingQuotes,
   onRefreshQuotes,
   onQuickRecord,
   onNavigateToPlan,
+  supabaseError,
+  supabaseEmpty,
 }: DashboardProps) {
   // Calculations
   const qqqmRecords = records.filter(r => r.symbol === "QQQM");
@@ -187,85 +143,28 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* 市场恐慌情绪指标 (VIX Fear Index) */}
-      <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 space-y-3 transition-all duration-300 mb-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">市场恐慌情绪指标</span>
-          </div>
-          {vix?.isFallback && (
-            <span className="text-[8px] bg-slate-200/50 text-slate-400 px-1.5 py-0.5 rounded font-mono font-bold">
-              静止离线
-            </span>
-          )}
+      {supabaseError && (
+        <div className="p-3.5 bg-rose-50 border border-rose-100 text-rose-600 text-xs rounded-2xl flex items-center gap-2 font-bold">
+          <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          <span>{supabaseError}</span>
         </div>
+      )}
 
-        {/* Big Score Header */}
-        {vix ? (
-          (() => {
-            const vixValue = vix.price;
-            const interpretation = getVixInterpretation(vixValue);
-            
-            return (
-              <div className="space-y-3">
-                {/* Numeric VIX Display */}
-                <div className="flex justify-between items-baseline">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-800 tracking-tighter font-mono leading-none">
-                      {vixValue.toFixed(2)}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg leading-tight uppercase ${interpretation.color}`}>
-                      {interpretation.text}
-                    </span>
-                  </div>
-                  {vix.change !== 0 && (
-                    <span className={`text-[10px] font-bold font-mono ${vix.change >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                      {vix.change >= 0 ? "+" : ""}{vix.change.toFixed(2)} ({vix.changePercent >= 0 ? "▲" : "▼"}{Math.abs(vix.changePercent).toFixed(2)}%)
-                    </span>
-                  )}
-                </div>
-
-                {/* Progress Bar Gauge Slider exactly like prototype sketch */}
-                <div className="space-y-1">
-                  <div className="relative h-11 w-full bg-[#EBEBEB] rounded-2xl flex items-center px-1.5 border border-white">
-                    {/* Filled bar up to VIX percentage */}
-                    <div 
-                      className="h-8 rounded-xl transition-all duration-700 ease-out flex items-center justify-end" 
-                      style={{ 
-                        width: `${Math.min(Math.max(vixValue - 1.5, 2), 97)}%`, 
-                        backgroundColor: "#194D43"
-                      }} 
-                    />
-                    {/* Vertical indicator slider cursor */}
-                    <div className="w-1 h-6 bg-[#18181B] rounded-full transition-all duration-700 ease-out z-10 ml-1.5" />
-                  </div>
-
-                  {/* Ticks scale line below Progress Capsule */}
-                  <div className="relative w-full px-2 mt-1.5 text-slate-400 font-mono text-[8.5px] font-bold select-none">
-                    <div className="flex justify-between px-1 text-slate-300">
-                      <span>|</span>
-                      <span className="relative right-0.5">|</span>
-                      <span>|</span>
-                    </div>
-                    <div className="flex justify-between mt-0.5 font-mono text-slate-500 pt-0 pr-0 pl-[4px]">
-                      <span>0</span>
-                      <span>50</span>
-                      <span>100</span>
-                    </div>
-                  </div>
-                </div>
-
-
-              </div>
-            );
-          })()
-        ) : (
-          <div className="py-4 text-center text-slate-300 text-xs font-semibold animate-pulse flex items-center justify-center gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
-            <span>恐慌指数行情同步中...</span>
+      {supabaseEmpty && (
+        <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-2xl space-y-2">
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <AlertCircle className="w-4.5 h-4.5 text-amber-600 shrink-0" />
+            <span>检测到数据库无数据 (已成功连接 Supabase)</span>
           </div>
-        )}
-      </div>
+          <div className="pl-6.5 space-y-1.5 text-amber-700/90 leading-relaxed font-medium">
+            <p>1. <strong className="text-amber-900">行级安全 RLS 拦截（最常见）</strong>：Supabase 的表默认开启了 RLS 且默认拒绝所有读取请求（不报错，只返回空数组 <code className="bg-amber-100/60 px-1 rounded font-mono">[]</code>）。</p>
+            <p className="border-l-2 border-amber-200 pl-2 mt-0.5 ml-2 text-[11px] text-amber-850/80">
+              💡 <strong>解决方法</strong>：在 Supabase 控制台的 <strong className="text-amber-900">Table Editor</strong>、<strong className="text-amber-900">RLS Policies</strong> 或 SQL Editor 里点击您的表，选择 <strong className="text-amber-900">Disable RLS</strong>（禁用安全策略），或点击 <strong className="text-amber-900">Add Policy</strong> 并创建一条允许所有人读取（SELECT）的策略即可。
+            </p>
+            <p className="pt-1">2. <strong className="text-amber-900">表内确实无记录</strong>：请确保 <code className="bg-amber-100/60 px-1 rounded font-mono">stock_prices</code> 表中已插入 Symbol 为 <code className="font-mono font-bold text-amber-900">VOO</code>、<code className="font-mono font-bold text-amber-900">QQQM</code> 的行数据（字母需大写）。</p>
+          </div>
+        </div>
+      )}
 
       {/* 1.3 VA核心卡片 - Styled in striking solid color theme from design */}
       {!plan ? (
@@ -370,7 +269,7 @@ export default function Dashboard({
       <div className="space-y-3 transition-all duration-300">
         <div className="flex justify-between items-center pb-0 px-0">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">ETF持仓明细</span>
-          <span className="text-[9px] text-slate-400 font-bold font-mono">分配比例</span>
+          <span className="text-[10px] text-slate-400 font-bold font-mono">分配比例</span>
         </div>
 
         {/* 1.1 资产总览 - 2-Card Summary Grid moved under title */}
@@ -383,7 +282,7 @@ export default function Dashboard({
                 {formatCurrency(totalAssets)}
               </div>
             </div>
-            <div className={`text-[9px] sm:text-[10px] font-semibold flex items-center gap-0.5 leading-none mt-2 ${totalGain >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+            <div className={`text-[10px] font-semibold flex items-center gap-0.5 leading-none mt-2 ${totalGain >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
               <span>{totalGain >= 0 ? "+" : ""}{formatCurrency(totalGain)} ({totalGainPercent >= 0 ? "+" : ""}{totalGainPercent.toFixed(2)}%)</span>
             </div>
           </div>
@@ -396,7 +295,7 @@ export default function Dashboard({
                 {formatCurrency(totalInvested)}
               </div>
             </div>
-            <div className={`text-[9px] sm:text-[10px] font-semibold flex items-center gap-0.5 leading-none mt-2 ${todayGain >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+            <div className={`text-[10px] font-semibold flex items-center gap-0.5 leading-none mt-2 ${todayGain >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
               <span>今日盈亏：{todayGain >= 0 ? "+" : ""}{formatCurrency(todayGain)}</span>
             </div>
           </div>
@@ -409,7 +308,7 @@ export default function Dashboard({
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
                 <span className="text-xs font-black text-slate-800 font-sans tracking-tight">QQQM</span>
-                <span className="text-[8px] bg-[#6366F1]/10 text-[#6366F1] px-1 py-0.2 rounded font-bold">
+                <span className="text-[10px] bg-[#6366F1]/10 text-[#6366F1] px-1.5 py-0.5 rounded font-bold">
                   纳指100 ETF
                 </span>
               </div>
@@ -420,31 +319,33 @@ export default function Dashboard({
 
             <div className="flex justify-between items-baseline pt-0.5">
               <div>
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-none">持仓市值</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">持仓市值</p>
                 <p className="text-sm font-extrabold text-[#18181B] font-mono mt-1 tracking-tight">
                   {formatCurrency(qqqmValue)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-none">累计盈亏</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">累计盈亏</p>
                 <div className={`text-[10px] sm:text-xs font-extrabold font-mono mt-0.5 ${qqqmGain >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                   {qqqmGain >= 0 ? "+" : ""}{formatCurrency(qqqmGain)} ({qqqmGainPercent >= 0 ? "+" : ""}{qqqmGainPercent.toFixed(2)}%)
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-[#EBEBEB] text-[9px] text-slate-550 font-bold font-mono">
+            <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-[#EBEBEB] text-[10px] text-slate-550 font-bold font-mono">
               <div>
-                <span className="text-slate-400 text-[7.5px] block leading-snug">持股数量</span>
+                <span className="text-slate-400 text-[10px] block leading-snug">持股数量</span>
                 <span className="text-slate-700">{qqqmShares.toFixed(3)}</span>
               </div>
               <div className="text-center">
-                <span className="text-slate-400 text-[7.5px] block leading-snug">持仓均价</span>
+                <span className="text-slate-400 text-[10px] block leading-snug">持仓均价</span>
                 <span className="text-slate-700">{formatCurrency(qqqmAvgCost)}</span>
               </div>
               <div className="text-right">
-                <span className="text-slate-400 text-[7.5px] block leading-snug">当前市价</span>
-                <span className="text-slate-700">{formatCurrency(qqqmPrice)}</span>
+                <span className="text-slate-400 text-[10px] block leading-snug">当前市价</span>
+                <span className="text-slate-700">
+                  {quotes.QQQM ? formatCurrency(quotes.QQQM.price) : "--"}
+                </span>
               </div>
             </div>
           </div>
@@ -455,7 +356,7 @@ export default function Dashboard({
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#0EA5E9]" />
                 <span className="text-xs font-black text-slate-800 font-sans tracking-tight">VOO</span>
-                <span className="text-[8px] bg-[#0EA5E9]/10 text-[#0EA5E9] px-1 py-0.2 rounded font-bold">
+                <span className="text-[10px] bg-[#0EA5E9]/10 text-[#0EA5E9] px-1.5 py-0.5 rounded font-bold">
                   标普500 ETF
                 </span>
               </div>
@@ -466,31 +367,33 @@ export default function Dashboard({
 
             <div className="flex justify-between items-baseline pt-0.5">
               <div>
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-none">持仓市值</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">持仓市值</p>
                 <p className="text-sm font-extrabold text-[#18181B] font-mono mt-1 tracking-tight">
                   {formatCurrency(vooValue)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-none">累计盈亏</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">累计盈亏</p>
                 <div className={`text-[10px] sm:text-xs font-extrabold font-mono mt-0.5 ${vooGain >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
                   {vooGain >= 0 ? "+" : ""}{formatCurrency(vooGain)} ({vooGainPercent >= 0 ? "+" : ""}{vooGainPercent.toFixed(2)}%)
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-[#EBEBEB] text-[9px] text-slate-550 font-bold font-mono">
+            <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-[#EBEBEB] text-[10px] text-slate-550 font-bold font-mono">
               <div>
-                <span className="text-slate-400 text-[7.5px] block leading-snug">持股数量</span>
+                <span className="text-slate-400 text-[10px] block leading-snug">持股数量</span>
                 <span className="text-slate-700">{vooShares.toFixed(3)}</span>
               </div>
               <div className="text-center">
-                <span className="text-slate-400 text-[7.5px] block leading-snug">持仓均价</span>
+                <span className="text-slate-400 text-[10px] block leading-snug">持仓均价</span>
                 <span className="text-slate-700">{formatCurrency(vooAvgCost)}</span>
               </div>
               <div className="text-right">
-                <span className="text-slate-400 text-[7.5px] block leading-snug">当前市价</span>
-                <span className="text-slate-700">{formatCurrency(vooPrice)}</span>
+                <span className="text-slate-400 text-[10px] block leading-snug">当前市价</span>
+                <span className="text-slate-700">
+                  {quotes.VOO ? formatCurrency(quotes.VOO.price) : "--"}
+                </span>
               </div>
             </div>
           </div>

@@ -279,7 +279,7 @@ export default function Plan({
                 <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
                 <span className="text-xs font-bold text-blue-800">当前活跃：计划第 {currentMonthIdx} 个月</span>
               </div>
-              <span className="text-[9px] font-bold font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+              <span className="text-[10px] font-bold font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                 当前定投月
               </span>
             </div>
@@ -367,7 +367,7 @@ export default function Plan({
                       </span>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-slate-700 font-mono">{m.dateLabel}</span>
-                        <span className="text-[9px] text-slate-400 font-medium">
+                        <span className="text-[10px] text-slate-400 font-medium">
                           {isActive ? "✨ 正在执行的活动定投月" : `月定投里程碑`}
                         </span>
                       </div>
@@ -383,7 +383,7 @@ export default function Plan({
             </div>
             
             {!showEntireMonths && monthsArray.length > slicedMonths.length && (
-              <p className="text-[9px] text-slate-400 text-center font-medium mt-1">
+              <p className="text-[10px] text-slate-400 text-center font-medium mt-1">
                 已自动隐藏其余非核心月份。开启大表可查阅完整的财富递增模拟曲线。
               </p>
             )}
