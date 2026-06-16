@@ -30,9 +30,24 @@ export default function Plan({
   quotes,
   onSavePlan,
 }: PlanProps) {
+  // Helper to get actual current month’s first day in YYYY-MM-DD format
+  const getDefaultStartDate = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${yyyy}-${mm}-01`;
+  };
+
+  const getDefaultEndDate = () => {
+    const d = new Date();
+    const yyyy = d.getFullYear() + 30;
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${yyyy}-${mm}-01`;
+  };
+
   // Plan setup hook form state
-  const [startDate, setStartDate] = useState("2025-08-01");
-  const [endDate, setEndDate] = useState("2055-08-01");
+  const [startDate, setStartDate] = useState(getDefaultStartDate());
+  const [endDate, setEndDate] = useState(getDefaultEndDate());
   const [initialCapital, setInitialCapital] = useState("500");
   const [monthlyGrowth, setMonthlyGrowth] = useState("500");
 
@@ -154,7 +169,7 @@ export default function Plan({
       <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-5 space-y-4">
         <h2 className="text-xs font-bold text-slate-700 flex items-center gap-2 border-b border-slate-100 pb-3 uppercase tracking-wider">
           <Map className="w-4 h-4 text-blue-600" />
-          <span>VA规则参数配置 (Plan Constants)</span>
+          <span>VA规则参数配置</span>
         </h2>
 
         {successText && (
@@ -209,7 +224,7 @@ export default function Plan({
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-blue-600" />
-                第1个月初始目标市值 (USD)
+                第1个月初始目标市值
               </label>
               <input
                 type="number"
@@ -226,7 +241,7 @@ export default function Plan({
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                 <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-                后续月目标递增额 (USD)
+                后续月目标递增额
               </label>
               <input
                 type="number"
@@ -254,7 +269,7 @@ export default function Plan({
       {/* 3.2 当前定投执行状态高亮 Card */}
       {plan && (
         <div className="space-y-4">
-          <h2 className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-1">当前月份执行状态 (Live Execution)</h2>
+          <h2 className="text-[10px] font-bold text-slate-400 tracking-wider uppercase px-1">当前月份执行状态</h2>
           
           <div className="bg-gradient-to-r from-blue-50/60 to-slate-100/60 border border-blue-100 rounded-2xl p-5 space-y-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl" />
@@ -265,7 +280,7 @@ export default function Plan({
                 <span className="text-xs font-bold text-blue-800">当前活跃：计划第 {currentMonthIdx} 个月</span>
               </div>
               <span className="text-[9px] font-bold font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
-                ACTIVE PLAN MONTH
+                当前定投月
               </span>
             </div>
 
@@ -320,7 +335,7 @@ export default function Plan({
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
                 <ListOrdered className="w-4 h-4 text-blue-600" />
-                长期里程碑序列 (Milestone Sequence)
+                长期里程碑序列
               </span>
               <button
                 onClick={() => setShowEntireMonths(!showEntireMonths)}

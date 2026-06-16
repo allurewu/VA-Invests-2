@@ -17,7 +17,7 @@ import {
   savePlan, 
   saveSettings 
 } from "./lib/db";
-import { InvestmentRecord, ValueAveragePlan, AppSettings, StockQuote } from "./types";
+import { InvestmentRecord, ValueAveragePlan, AppSettings, StockQuote, VixQuote } from "./types";
 import Dashboard from "./components/Dashboard";
 import Records from "./components/Records";
 import Plan from "./components/Plan";
@@ -38,7 +38,7 @@ const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <g id="Iconly/Light/Home" stroke="none" strokeWidth="2" fill="none" fillRule="evenodd" strokeLinecap="round" strokeLinejoin="round">
-      <g id="Home" transform="translate(2.500000, 2.000000)" stroke="currentColor" strokeWidth="1.5">
+      <g id="Home" transform="translate(2.500000, 2.000000)" stroke="currentColor" strokeWidth="2">
         <path d="M6.65721519,18.7714023 L6.65721519,15.70467 C6.65719744,14.9246392 7.29311743,14.2908272 8.08101266,14.2855921 L10.9670886,14.2855921 C11.7587434,14.2855921 12.4005063,14.9209349 12.4005063,15.70467 L12.4005063,15.70467 L12.4005063,18.7809263 C12.4003226,19.4432001 12.9342557,19.984478 13.603038,20 L15.5270886,20 C17.4451246,20 19,18.4606794 19,16.5618312 L19,16.5618312 L19,7.8378351 C18.9897577,7.09082692 18.6354747,6.38934919 18.0379747,5.93303245 L11.4577215,0.685301154 C10.3049347,-0.228433718 8.66620456,-0.228433718 7.51341772,0.685301154 L0.962025316,5.94255646 C0.362258604,6.39702249 0.00738668938,7.09966612 0,7.84735911 L0,16.5618312 C0,18.4606794 1.55487539,20 3.47291139,20 L5.39696203,20 C6.08235439,20 6.63797468,19.4499381 6.63797468,18.7714023 L6.63797468,18.7714023"></path>
       </g>
     </g>
@@ -58,7 +58,7 @@ const PaperIcon = (props: React.SVGProps<SVGSVGElement>) => (
     {...props}
   >
     <g id="Iconly/Light/Paper" stroke="none" strokeWidth="2" fill="none" fillRule="evenodd" strokeLinecap="round" strokeLinejoin="round">
-      <g id="Paper" transform="translate(3.500000, 2.000000)" stroke="currentColor" strokeWidth="1.5">
+      <g id="Paper" transform="translate(3.500000, 2.000000)" stroke="currentColor" strokeWidth="2">
         <path d="M11.2378,0.761771171 L4.5848,0.761771171 C2.5048,0.7538 0.7998,2.4118 0.7508,4.4908 L0.7508,15.2038 C0.7048,17.3168 2.3798,19.0678 4.4928,19.1148 C4.5238,19.1148 4.5538,19.1158 4.5848,19.1148 L12.5738,19.1148 C14.6678,19.0298 16.3178,17.2998 16.3029015,15.2038 L16.3029015,6.0378 L11.2378,0.761771171 Z" id="Stroke-1"></path>
         <path d="M10.9751,0.75 L10.9751,3.659 C10.9751,5.079 12.1231,6.23 13.5431,6.234 L16.2981,6.234" id="Stroke-3"></path>
         <line x1="10.7881" y1="13.3585" x2="5.3881" y2="13.3585" id="Stroke-5"></line>
@@ -98,7 +98,7 @@ const ActivityIcon = (props: React.SVGProps<SVGSVGElement>) => (
     fill="none"
     {...props}
   >
-    <g id="Iconly/Light/Activity" stroke="none" strokeWidth="1.5" fill="none" fillRule="evenodd" strokeLinecap="round" strokeLinejoin="round">
+    <g id="Iconly/Light/Activity" stroke="none" strokeWidth="2" fill="none" fillRule="evenodd" strokeLinecap="round" strokeLinejoin="round">
       <g id="Activity" transform="translate(2.000000, 1.500000)" stroke="currentColor" strokeWidth="2">
         <polyline id="Path_33966" points="5.24485128 13.2814646 8.23798631 9.39130439 11.652174 12.0732266 14.5812358 8.29290622"></polyline>
         <circle id="Ellipse_741" cx="17.9954234" cy="2.70022885" r="1.92219681"></circle>
@@ -138,6 +138,7 @@ export default function App() {
   const [plan, setPlan] = useState<ValueAveragePlan | null>(null);
   const [settings, setSettings] = useState<AppSettings>({ qqqmRatio: 70, vooRatio: 30, provider: "Yahoo Finance" });
   const [quotes, setQuotes] = useState<Record<"QQQM" | "VOO", StockQuote | null>>({ QQQM: null, VOO: null });
+  const [vix, setVix] = useState<VixQuote | null>(null);
   const [loadingQuotes, setLoadingQuotes] = useState<boolean>(false);
   
   // Transition / Prefills state from dashboard click to record screen
@@ -182,23 +183,36 @@ export default function App() {
           isFallback: true
         }
       });
+      setVix({
+        price: 15.42,
+        prevClose: 15.60,
+        change: -0.18,
+        changePercent: -1.15,
+        timestamp: Date.now(),
+        isFallback: true
+      });
       return;
     }
 
     setLoadingQuotes(true);
     try {
-      const [resQQQM, resVOO] = await Promise.all([
+      const [resQQQM, resVOO, resVix] = await Promise.all([
         fetch("/api/quote?symbol=QQQM"),
-        fetch("/api/quote?symbol=VOO")
+        fetch("/api/quote?symbol=VOO"),
+        fetch("/api/vix")
       ]);
 
       const dataQQQM = resQQQM.ok ? await resQQQM.json() : null;
       const dataVOO = resVOO.ok ? await resVOO.json() : null;
+      const dataVix = resVix.ok ? await resVix.json() : null;
 
       setQuotes({
         QQQM: dataQQQM,
         VOO: dataVOO
       });
+      if (dataVix) {
+        setVix(dataVix);
+      }
     } catch (err) {
       console.error("Error fetching live rates from Express Quote API", err);
     } finally {
@@ -352,6 +366,7 @@ export default function App() {
             plan={plan}
             settings={settings}
             quotes={quotes}
+            vix={vix}
             loadingQuotes={loadingQuotes}
             onRefreshQuotes={fetchQuotes}
             onQuickRecord={handleQuickRecord}
@@ -427,7 +442,7 @@ export default function App() {
               <span className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
             )}
             <PaperIcon className="w-4.5 h-4.5" />
-            <span className="text-[10px]">记录页</span>
+            <span className="text-[10px]">定投记录</span>
           </button>
 
           {/* Tab 3: VA 计划 */}
@@ -439,7 +454,7 @@ export default function App() {
             }`}
           >
             <CalendarIcon className="w-4.5 h-4.5" />
-            <span className="text-[10px]">VA 计划</span>
+            <span className="text-[10px]">VA计划</span>
           </button>
 
           {/* Tab 4: 统计 */}
@@ -451,7 +466,7 @@ export default function App() {
             }`}
           >
             <ActivityIcon className="w-4.5 h-4.5" />
-            <span className="text-[10px]">统计页</span>
+            <span className="text-[10px]">数据分析</span>
           </button>
 
           {/* Tab 5: 设置 */}
@@ -463,7 +478,7 @@ export default function App() {
             }`}
           >
             <SettingIconComp className="w-4.5 h-4.5" />
-            <span className="text-[10px]">设置页</span>
+            <span className="text-[10px]">设置</span>
           </button>
         </div>
       </nav>

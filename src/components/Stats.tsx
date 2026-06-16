@@ -81,30 +81,30 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
     let runningSharesVOO = 0;
     let runningCost = 0;
 
-    chartData = plottedMonths.map((m) => {
-      const label = m.dateLabel; // "YYYY-MM"
-      
-      // Filter records that occurred in this specific month or earlier
-      const recordsUpToMonth = records.filter((r) => {
-        const rMonth = r.date.substring(0, 7);
-        return rMonth <= label;
+      chartData = plottedMonths.map((m) => {
+        const label = m.dateLabel; // "YYYY-MM"
+        
+        // Filter records that occurred in this specific month or earlier
+        const recordsUpToMonth = records.filter((r) => {
+          const rMonth = r.date.substring(0, 7);
+          return rMonth <= label;
+        });
+
+        const monthSharesQQQ = recordsUpToMonth.filter(r => r.symbol === "QQQM").reduce((s, r) => s + r.shares, 0);
+        const monthSharesVOO = recordsUpToMonth.filter(r => r.symbol === "VOO").reduce((s, r) => s + r.shares, 0);
+        const monthCost = recordsUpToMonth.reduce((s, r) => s + r.amount, 0);
+
+        // Estimate valuation at that month. We multiply shares by current price for current perspective, 
+        // or by historical avg prices if we wanted historical, but standard and neatest is current value of those positions.
+        const monthAssetValue = (monthSharesQQQ * qqqPrice) + (monthSharesVOO * vooPrice);
+
+        return {
+          name: label,
+          "目标价值": parseFloat(m.targetValue.toFixed(2)),
+          "累计投入": parseFloat(monthCost.toFixed(2)),
+          "资产总值": parseFloat(monthAssetValue.toFixed(2)),
+        };
       });
-
-      const monthSharesQQQ = recordsUpToMonth.filter(r => r.symbol === "QQQM").reduce((s, r) => s + r.shares, 0);
-      const monthSharesVOO = recordsUpToMonth.filter(r => r.symbol === "VOO").reduce((s, r) => s + r.shares, 0);
-      const monthCost = recordsUpToMonth.reduce((s, r) => s + r.amount, 0);
-
-      // Estimate valuation at that month. We multiply shares by current price for current perspective, 
-      // or by historical avg prices if we wanted historical, but standard and neatest is current value of those positions.
-      const monthAssetValue = (monthSharesQQQ * qqqPrice) + (monthSharesVOO * vooPrice);
-
-      return {
-        name: label,
-        "目标价值 Target": parseFloat(m.targetValue.toFixed(2)),
-        "累计投入 Invested": parseFloat(monthCost.toFixed(2)),
-        "资产总值 Assets": parseFloat(monthAssetValue.toFixed(2)),
-      };
-    });
 
     // 4.2 Stats cards helper calculations
     // Max single month purchase
@@ -119,17 +119,17 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
 
     // Find maximum profit month (where assets exceeded target or cost by the highest amount)
     chartData.forEach(d => {
-      const profit = d["资产总值 Assets"] - d["累计投入 Invested"];
-      if (profit > maxReturnVal && d["累计投入 Invested"] > 0) {
+      const profit = d["资产总值"] - d["累计投入"];
+      if (profit > maxReturnVal && d["累计投入"] > 0) {
         maxReturnVal = profit;
         maxReturnMonth = d.name;
       }
     });
 
     if (maxReturnVal <= 0) {
-      maxReturnMonth = "暂无(尚未盈利)";
+      maxReturnMonth = "尚未盈利";
     } else {
-      maxReturnMonth = `${maxReturnMonth} (盈利 ${formatCurrency(maxReturnVal)})`;
+      maxReturnMonth = `${maxReturnMonth}，累计盈利 ${formatCurrency(maxReturnVal)}`;
     }
   }
 
@@ -142,7 +142,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
   return (
     <div className="space-y-5 pb-24">
       {/* Title */}
-      <div>
+      <div className="mb-4">
         <h1 className="text-xl font-bold text-slate-800 tracking-tight">分析报告</h1>
         <p className="text-xs text-slate-400 mt-2 font-medium">
           平衡资产配比，一眼洞见财富增长轨迹
@@ -164,11 +164,11 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
 
       {/* 4.1 三线资金对齐曲线 Chart Card */}
       {plan && chartData.length > 0 && (
-        <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 space-y-4">
+        <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 mb-4 space-y-4">
           <div>
             <h2 className="text-xs font-bold text-slate-700 uppercase tracking-widest flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-blue-600" />
-              三线本利对比曲线 (VA Compound Curve)
+              本利对比曲线
             </h2>
             <p className="text-[10px] text-slate-400 mt-1 font-medium">
               通过复合目标、实际累计投入与公允证券市值的叠加，清晰辨识当前处于“跑赢市场”还是“应该坚定加仓”节点。
@@ -199,7 +199,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "#ffffff",
-                    borderColor: "#e2e8f0",
+                    borderColor: "#EBEBEB",
                     borderRadius: "12px",
                     fontSize: "11px",
                     color: "#334155",
@@ -225,7 +225,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
                 {/* 目标价值：紫线 */}
                 <Line
                   type="monotone"
-                  dataKey="目标价值 Target"
+                  dataKey="目标价值"
                   stroke="#8b5cf6"
                   strokeWidth={2}
                   dot={{ r: 2 }}
@@ -233,7 +233,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
                 {/* 累计投入：蓝线 */}
                 <Line
                   type="monotone"
-                  dataKey="累计投入 Invested"
+                  dataKey="累计投入"
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   dot={{ r: 2 }}
@@ -241,7 +241,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
                 {/* 实际资产：祖母绿 */}
                 <Line
                   type="monotone"
-                  dataKey="资产总值 Assets"
+                  dataKey="资产总值"
                   stroke="#10b981"
                   strokeWidth={2.5}
                   dot={{ r: 3 }}
@@ -257,7 +257,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
       )}
 
       {/* 4.2 统计卡片 (Important KPI statistics) */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Total Cost */}
         <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 space-y-1.5">
           <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">累计总成本</span>
@@ -267,7 +267,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
 
         {/* Total Profit Rate */}
         <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 space-y-1.5">
-          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">投资总收益 (估量)</span>
+          <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">投资总收益</span>
           <span className={`text-lg font-bold font-mono block ${totalGain >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
             {totalGain >= 0 ? "+" : ""}{formatCurrency(totalGain)}
           </span>
@@ -298,7 +298,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
       {/* 4.3 ETF 资产配置以及收益来源 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Pie allocation */}
-        <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-5 space-y-4">
+        <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 space-y-4">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
             <PieIcon className="w-4 h-4 text-blue-600" />
             ETF 持仓份额现市值占比
@@ -354,7 +354,7 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
         </div>
 
         {/* Yield Sources Breakdowns */}
-        <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-5 space-y-4">
+        <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 space-y-4">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
             <Award className="w-4 h-4 text-blue-600" />
             各标的单体盈利贡献
@@ -362,9 +362,9 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
 
           <div className="space-y-3 text-xs">
             {/* QQQM */}
-            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5 mb-2">
               <div className="flex justify-between font-bold">
-                <span className="text-[#6366f1] font-mono">QQQM (纳斯达克100)</span>
+                <span className="text-[#6366f1] font-mono">QQQM 纳斯达克100</span>
                 <span className={qqqGain >= 0 ? "text-emerald-600" : "text-rose-600"}>
                   {qqqGain >= 0 ? "+" : ""}{formatCurrency(qqqGain)} ({qqqAvgCost > 0 ? formatPercent(qqqGainPct) : "0.00%"})
                 </span>
@@ -376,9 +376,9 @@ export default function Stats({ records, plan, quotes }: StatsProps) {
             </div>
 
             {/* VOO */}
-            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
               <div className="flex justify-between font-bold">
-                <span className="text-[#0ea5e9] font-mono">VOO (标普500)</span>
+                <span className="text-[#0ea5e9] font-mono">VOO 标普500</span>
                 <span className={vooGain >= 0 ? "text-emerald-600" : "text-rose-600"}>
                   {vooGain >= 0 ? "+" : ""}{formatCurrency(vooGain)} ({vooAvgCost > 0 ? formatPercent(vooGainPct) : "0.00%"})
                 </span>

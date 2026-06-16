@@ -4,6 +4,8 @@
 @theme {
   --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, monospace;
+  --color-slate-50: #FFFFFF;
+  --color-slate-200: #EBEBEB;
   --color-slate-300: #7E7E7E;
   --color-slate-400: #7E7E7E;
   --color-slate-500: #7E7E7E;

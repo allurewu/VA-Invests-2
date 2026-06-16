@@ -53,7 +53,7 @@ export default function Settings({
     setQqqmRatio(100 - val);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveRatios = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccessText("");
     setErrorText("");
@@ -70,6 +70,23 @@ export default function Settings({
         provider,
       });
       setSuccessText("配置修改成功！今后的定投建议拆分将自动按此比例核算。");
+    } catch (err: any) {
+      setErrorText("保存配置出错: " + err.message);
+    }
+  };
+
+  const handleSaveProvider = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSuccessText("");
+    setErrorText("");
+
+    try {
+      await onSaveSettings({
+        qqqmRatio,
+        vooRatio,
+        provider,
+      });
+      setSuccessText("行情数据接口更新成功！");
     } catch (err: any) {
       setErrorText("保存配置出错: " + err.message);
     }
@@ -137,12 +154,12 @@ export default function Settings({
 
       {/* 5.1 ETF配置 Allocation Ratio slider */}
       <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 mb-4 space-y-4">
-        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
           <Sliders className="w-4 h-4 text-blue-600" />
           <span>定投资产权重占比</span>
         </h2>
 
-        <form onSubmit={handleSave} className="space-y-5">
+        <form onSubmit={handleSaveRatios} className="space-y-5">
           <div className="space-y-4">
             {/* QQQM Ratio */}
             <div className="space-y-2">
@@ -183,18 +200,29 @@ export default function Settings({
             </div>
           </div>
 
+          <button
+            type="submit"
+            id="save_settings_btn"
+            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition cursor-pointer"
+          >
+            保存权重比
+          </button>
+        </form>
+      </div>
 
+      {/* 5.2 行情数据接口 */}
+      <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 mb-4 space-y-4">
+        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+          <Globe className="w-4 h-4 text-blue-600" />
+          <span>行情数据接口</span>
+        </h2>
 
-          {/* 5.2 Provider */}
-          <div className="space-y-2 pt-2 border-t border-slate-100">
-            <label className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 leading-none uppercase tracking-wider">
-              <Globe className="w-3.5 h-3.5 text-blue-600" />
-              行情数据接口
-            </label>
+        <form onSubmit={handleSaveProvider} className="space-y-4">
+          <div className="space-y-2">
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition"
+              className="w-full bg-[#FFFFFF] border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white transition animate-none"
             >
               <option value="Yahoo Finance">Yahoo Finance (推荐实时自动获取)</option>
               <option value="Fallback Static Mode">离线模式（静态静止价）</option>
@@ -203,17 +231,17 @@ export default function Settings({
 
           <button
             type="submit"
-            id="save_settings_btn"
+            id="save_provider_btn"
             className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition cursor-pointer"
           >
-            保存并实时应用该组配置
+            保存接口
           </button>
         </form>
       </div>
 
       {/* 5.3 数据管理 Backup / Import Export */}
       <div className="bg-[#F3F3F3] border border-[#FFFFFF] rounded-2xl p-4 mt-0 mr-0 mb-0 ml-0 space-y-4">
-        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-2">
+        <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
           <Database className="w-4 h-4 text-blue-600" />
           <span>账包导入导出与安全</span>
         </h2>
@@ -244,7 +272,7 @@ export default function Settings({
             id="import_json_btn"
             className="py-2.5 bg-slate-50 border border-slate-200 hover:border-indigo-500/30 text-slate-600 hover:text-indigo-600 rounded-xl transition text-xs font-bold flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Upload className="w-3.5 h-3.5 text-indigo-500" />
+            <Upload className="w-3.5 h-3.5 text-[#194D43]" />
             恢复数据
           </button>
 

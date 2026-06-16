@@ -295,7 +295,7 @@ export default function Records({
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <span className="text-xs font-bold text-slate-700 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            {editingId !== null ? `编辑买入记录 (ID: ${editingId})` : "登记买入量 (Input Lotto)"}
+            {editingId !== null ? `编辑买入记录 - ID ${editingId}` : "登记买入量"}
           </span>
           <span className="text-[10px] text-slate-400 font-bold font-mono">IndexedDB沙箱</span>
         </div>
@@ -335,7 +335,7 @@ export default function Records({
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
                 <Tag className="w-3 h-3 text-blue-500" />
-                选择标的 (Symbol)
+                选择标的
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -369,7 +369,7 @@ export default function Records({
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
                 <DollarSign className="w-3 h-3 text-blue-500" />
-                投入金额 (USD)
+                投入金额
               </label>
               <input
                 type="number"
@@ -387,7 +387,7 @@ export default function Records({
               <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex justify-between items-center">
                 <span className="flex items-center gap-1">
                   <Sliders className="w-3 h-3 text-blue-500" />
-                  买入价格 (USD)
+                  买入价格
                 </span>
                 <button
                   type="button"
@@ -414,7 +414,7 @@ export default function Records({
             <div className="flex justify-between items-center">
               <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
                 <Info className="w-3 h-3 text-blue-500" />
-                买入股数 (Shares)
+                买入股数
               </label>
               <div className="flex items-center gap-1.5">
                 <input
@@ -469,7 +469,7 @@ export default function Records({
       {/* 2.2 历史记录列表 Container */}
       <div className="space-y-3.5">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">投资明细档案 (Ledger History)</h2>
+          <h2 className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">投资明细档案</h2>
           <span className="text-[10px] text-slate-400 font-bold font-mono">共 {records.length} 笔明细</span>
         </div>
 

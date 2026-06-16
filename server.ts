@@ -100,6 +100,72 @@ async function startServer() {
     }
   });
 
+  // API Route: Get real-time VIX Volatility Index (Fear Index) from Yahoo Finance
+  app.get("/api/vix", async (req, res) => {
+    try {
+      // Fetch VIX from Yahoo Finance
+      const response = await fetch(
+        "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d",
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Yahoo Finance API for VIX responded with status ${response.status}`);
+      }
+
+      const data: any = await response.json();
+      const result = data?.chart?.result?.[0];
+      if (!result) {
+        throw new Error("No chart result found in VIX response");
+      }
+
+      const meta = result.meta;
+      const price = meta?.regularMarketPrice;
+      const prevClose = meta?.chartPreviousClose;
+
+      if (price === undefined || prevClose === undefined) {
+        throw new Error("Price data is missing from VIX response");
+      }
+
+      const change = price - prevClose;
+      const changePercent = (change / prevClose) * 100;
+
+      return res.json({
+        price: parseFloat(price.toFixed(2)),
+        prevClose: parseFloat(prevClose.toFixed(2)),
+        change: parseFloat(change.toFixed(2)),
+        changePercent: parseFloat(changePercent.toFixed(2)),
+        timestamp: Date.now(),
+        isFallback: false,
+      });
+    } catch (error: any) {
+      console.error("Error fetching VIX:", error.message);
+      
+      // Dynamic VIX fallback in safe ranges
+      const basePrice = 14.85 + (Math.random() - 0.5) * 0.4;
+      const price = parseFloat(basePrice.toFixed(2));
+      const prevClose = parseFloat((price - (Math.random() - 0.4) * 0.5).toFixed(2));
+      const change = parseFloat((price - prevClose).toFixed(2));
+      const changePercent = parseFloat(((change / prevClose) * 100).toFixed(2));
+
+      return res.json({
+        price,
+        prevClose,
+        change,
+        changePercent,
+        timestamp: Date.now(),
+        isFallback: true,
+        error: error.message,
+      });
+    }
+  });
+
   // Serve static assets in production, or use Vite middleware in dev
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

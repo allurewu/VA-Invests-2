@@ -29,3 +29,13 @@ export interface StockQuote {
   timestamp: number;
   isFallback: boolean;
 }
+
+export interface VixQuote {
+  price: number;
+  prevClose: number;
+  change: number;
+  changePercent: number;
+  timestamp: number;
+  isFallback: boolean;
+}
+
